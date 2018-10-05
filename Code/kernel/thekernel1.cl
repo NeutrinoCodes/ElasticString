@@ -2,13 +2,6 @@
 
 #define SAFEDIV(X, Y, EPSILON)    (X)/(Y + EPSILON)
 
-void fix_projective_space(float4* vector)
-{
-  *vector *= (float4)(1.0f, 1.0f, 1.0f, 0.0f);                                  // Nullifying 4th projective component...
-
-  *vector += (float4)(0.0f, 0.0f, 0.0f, 1.0f);                                  // Setting 4th projective component to "1.0f"...
-}
-
 void compute_link_displacements(float4 Pl_PR, float4 Pl_PL, float4 P,
                                 float4 rl_PR, float4 rl_PL, float4 fr,
                                 float4* Dl_PR, float4* Dl_PL)
