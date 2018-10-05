@@ -1,6 +1,6 @@
 /// @file
 
-#define DT                        0.001f                                        // Time delta [s].
+//#define DT                        0.001f                                        // Time delta [s].
 #define SAFEDIV(X, Y, EPSILON)    (X)/(Y + EPSILON)
 #define RMIN                      0.4f                                          // Offset red channel for colormap
 #define RMAX                      0.5f                                          // Maximum red channel for colormap
@@ -104,7 +104,8 @@ __kernel void thekernel(__global float4*    position,
                         __global float4*    mass,
                         __global int*       index_PR,                     // Indexes of "#1 friend" particles.
                         __global int*       index_PL,                     // Indexes of "#3 friend" particles.
-                        __global float4*    freedom)
+                        __global float4*    freedom,
+                        __global float*     DT)
 {
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -162,11 +163,14 @@ __kernel void thekernel(__global float4*    position,
   float4      Dl_PR;
   float4      Dl_PL;
 
+  // time step
+  float dt = *DT;
+
   // save velocity at time t_n
   float4 Vn = V;
 
   // compute velocity used for computation of acceleration at t_(n+1)
-  V += A*DT;
+  V += A*dt;
 
   // compute new acceleration based on velocity estimate at t_(n+1)
   compute_link_displacements(Pl_PR, Pl_PL, P, rl_PR, rl_PL, fr, &Dl_PR, &Dl_PL);
@@ -176,7 +180,7 @@ __kernel void thekernel(__global float4*    position,
   float4 Anew = Fnew/m;
 
   // predictor step: velocity at time t_(n+1) based on new forces
-  V = Vn + DT*(A+Anew)/2.0f;
+  V = Vn + dt*(A+Anew)/2.0f;
 
   // compute new acceleration based on predicted velocity at t_(n+1)
   Fnew = compute_particle_force(kl_PR, kl_PL, Dl_PR, Dl_PL, c, V, m, G, fr);
@@ -184,7 +188,7 @@ __kernel void thekernel(__global float4*    position,
   Anew = Fnew/m;
 
   // corrector step
-  V = Vn + DT*(A+Anew)/2.0f;
+  V = Vn + dt*(A+Anew)/2.0f;
 
   // set 4th component to 1
   fix_projective_space(&P);

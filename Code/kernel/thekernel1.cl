@@ -1,6 +1,6 @@
 /// @file
 
-#define DT                        0.001f                                        // Time delta [s].
+//#define DT                        0.001f                                        // Time delta [s].
 #define SAFEDIV(X, Y, EPSILON)    (X)/(Y + EPSILON)
 #define RMIN                      0.4f                                          // Offset red channel for colormap
 #define RMAX                      0.5f                                          // Maximum red channel for colormap
@@ -104,7 +104,8 @@ __kernel void thekernel(__global float4*    position,
                         __global float4*    mass,
                         __global int*       index_PR,                     // Indexes of "#1 friend" particles.
                         __global int*       index_PL,                     // Indexes of "#3 friend" particles.
-                        __global float4*    freedom)
+                        __global float4*    freedom,
+                        __global float*     DT)
 {
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -162,6 +163,9 @@ __kernel void thekernel(__global float4*    position,
   float4      Dl_PR;
   float4      Dl_PL;
 
+  // time step
+  float dt = *DT;
+
   // Calculating acceleration at time t_n...
   compute_link_displacements(Pl_PR, Pl_PL, P, rl_PR, rl_PL, fr, &Dl_PR, &Dl_PL);
 
@@ -170,7 +174,7 @@ __kernel void thekernel(__global float4*    position,
   A = F/m;
 
   // Calculating and updating position of the center particle...
-  P += V*DT + A*DT*DT/2.0f;
+  P += V*dt + A*dt*dt/2.0f;
 
   // update positions in global memory
   position_int[gid] = P;
