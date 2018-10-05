@@ -1,12 +1,6 @@
 /// @file
 
-//#define DT                        0.001f                                        // Time delta [s].
 #define SAFEDIV(X, Y, EPSILON)    (X)/(Y + EPSILON)
-#define RMIN                      0.4f                                          // Offset red channel for colormap
-#define RMAX                      0.5f                                          // Maximum red channel for colormap
-#define BMIN                      0.0f                                          // Offset blue channel for colormap
-#define BMAX                      1.0f                                          // Maximum blue channel for colormap
-#define SCALE                     1.5f                                          // Scale factor for plot
 
 void fix_projective_space(float4* vector)
 {
@@ -14,22 +8,6 @@ void fix_projective_space(float4* vector)
 
   *vector += (float4)(0.0f, 0.0f, 0.0f, 1.0f);                                  // Setting 4th projective component to "1.0f"...
 }
-
-/** Assign color based on a custom colormap.
-*/
-void assign_color(float4* color, float4* position)
-{
-  // Taking the component-wise absolute value of the position vector...
-  float4 p = fabs(*position)*SCALE;
-
-  // Extracting the z-component of the displacement...
-  p *= (float4)(0.0f, 0.0f, 1.0f, 0.0f);
-
-  // Setting color based on linear-interpolation colormap and adjusting alpha component...
-  *color = (float4)(RMIN+(RMAX-RMIN)*p.z, 0.0f, BMIN+(BMAX-BMIN)*p.z, 1.0f);
-
-}
-
 
 void compute_link_displacements(float4 Pl_PR, float4 Pl_PL, float4 P,
                                 float4 rl_PR, float4 rl_PL, float4 fr,
@@ -176,7 +154,7 @@ __kernel void thekernel(__global float4*    position,
   // Calculating and updating position of the center particle...
   P += V*dt + A*dt*dt/2.0f;
 
-  // update positions in global memory
+  // update intermediate positions in global memory
   position_int[gid] = P;
   velocity_int[gid] = V;
   acceleration_int[gid] = A;

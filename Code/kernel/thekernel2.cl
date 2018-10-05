@@ -1,6 +1,5 @@
 /// @file
 
-//#define DT                        0.001f                                        // Time delta [s].
 #define SAFEDIV(X, Y, EPSILON)    (X)/(Y + EPSILON)
 #define RMIN                      0.4f                                          // Offset red channel for colormap
 #define RMAX                      0.5f                                          // Maximum red channel for colormap
@@ -22,11 +21,11 @@ void assign_color(float4* color, float4* position)
   // Taking the component-wise absolute value of the position vector...
   float4 p = fabs(*position)*SCALE;
 
-  // Extracting the z-component of the displacement...
-  p *= (float4)(0.0f, 0.0f, 1.0f, 0.0f);
+  // Extracting the y-component of the displacement...
+  p *= (float4)(0.0f, 1.0f, 0.0f, 0.0f);
 
   // Setting color based on linear-interpolation colormap and adjusting alpha component...
-  *color = (float4)(RMIN+(RMAX-RMIN)*p.z, 0.0f, BMIN+(BMAX-BMIN)*p.z, 1.0f);
+  *color = (float4)(RMIN+(RMAX-RMIN)*p.y, 0.0f, BMIN+(BMAX-BMIN)*p.y, 1.0f);
 
 }
 

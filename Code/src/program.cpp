@@ -5,7 +5,7 @@
 #define X_MIN           -1.0f
 #define X_MAX           1.0f
 #define LENGTH          (float)(X_MAX-X_MIN)
-#define NUM_POINTS      100
+#define NUM_POINTS      200
 #define DX              (float)(LENGTH/NUM_POINTS)
 #define KERNEL_FILE1     "../../kernel/thekernel1.cl"
 #define KERNEL_FILE2     "../../kernel/thekernel2.cl"
@@ -44,11 +44,23 @@ void setup()
   int i;
   float x;
 
-  float k = 100000.0f;
-  float m = 0.1f;
-  float c = 0.03f;
 
-  dt->x[0] = 0.001f;
+  // dimensionless groups
+  float pi1 = 5.0f; // dt/(sqrt(m/k))
+  float pi2 = 0.00001f; // c/sqrt(m*k)
+  float pi3 = 100000.0f; // k*DX/(m*g)
+  float pi4 = NUM_POINTS; // LENGTH/DX
+
+  // setting model parameters (stiffness, mass, damping)
+  float m = 1.0f;
+  float g = 1.0f;
+  float k = pi3*m*g/DX;
+  float c = pi2*sqrt(m*k);
+
+  // setting time step
+  dt->x[0] = pi1*sqrt(m/k);
+
+  printf("Simulation parameters: k=%f, m=%f, c=%f\n", k, m, c);
 
   q1->init();                                                                    // Initializing OpenCL queue...
 
@@ -83,7 +95,7 @@ void setup()
     position->w[i] = 1.0f;
 
     gravity->x[i] = 0.0f;                                          // Setting "x" gravity...
-    gravity->y[i] = -1.0f;                                          // Setting "y" gravity...
+    gravity->y[i] = -g;                                          // Setting "y" gravity...
     gravity->z[i] = 0.0f;                                         // Setting "z" gravity...
     gravity->w[i] = 1.0f;                                          // Setting "w" gravity...
 
@@ -152,8 +164,9 @@ void setup()
     x += DX;
   }
 
-  float cDT = 1.0/sqrt(k/m);
+  float cDT = sqrt(m/k);
   printf("Critical DT = %f\n", cDT);
+  printf("Simulation DT = %f\n", dt->x[0]);
 
   tick = 0.0f;                                                                  // Setting initial time tick...
 
@@ -311,7 +324,6 @@ void terminate()
   delete q1;
   delete k1;
   delete k2;
-//  delete text;
 
   printf("All done!\n");
 }
