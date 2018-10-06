@@ -53,7 +53,7 @@ void setup()
   float pi4 = NUM_POINTS; // LENGTH/DX
 
   // Model parameters (mass, gravity, stiffness, damping)
-  float m = 10.0f*DX; // rho*A*DX
+  float m = 10.0f/NUM_POINTS; // rho*A*DX = rho*A*L/NUM_POINTS = M/NUM_POINTS
   float g = 10.0f;
   float k = pi3*m*g*NUM_POINTS;
   float c = pi2*sqrt(m*k);
