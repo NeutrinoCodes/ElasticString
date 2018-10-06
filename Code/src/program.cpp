@@ -5,7 +5,7 @@
 #define X_MIN           -1.0f
 #define X_MAX           1.0f
 #define LENGTH          (float)(X_MAX-X_MIN)
-#define NUM_POINTS      200
+#define NUM_POINTS      101
 #define DX              (float)(LENGTH/NUM_POINTS)
 #define KERNEL_FILE1     "../../kernel/thekernel1.cl"
 #define KERNEL_FILE2     "../../kernel/thekernel2.cl"
@@ -47,15 +47,15 @@ void setup()
   float x;
 
   // Dimensionless groups
-  float pi1 = 5.0f; // dt/(sqrt(m/k))
-  float pi2 = 0.00001f; // c/sqrt(m*k)
-  float pi3 = 100000.0f; // k*DX/(m*g) = (E*A)/(m*g)
+  float pi1 = 0.5f; // dt/(sqrt(m/k))
+  float pi2 = 0.001f; // c/sqrt(m*k)
+  float pi3 = 100.0f; // k/(NUM_POINTS*m*g) = (E*A)/(NUM_POINTS*m*g)
   float pi4 = NUM_POINTS; // LENGTH/DX
 
   // Model parameters (mass, gravity, stiffness, damping)
-  float m = 10.0f;
+  float m = 10.0f*DX; // rho*A*DX
   float g = 10.0f;
-  float k = pi3*m*g/DX;
+  float k = pi3*m*g*NUM_POINTS;
   float c = pi2*sqrt(m*k);
 
   printf("Simulation parameters: k=%f, m=%f, c=%f\n", k, m, c);
