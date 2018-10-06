@@ -43,21 +43,21 @@ void compute_link_displacements(float4 Pl_PR, float4 Pl_PL, float4 P,
   ////////////////////////////////////////////////////////////////////////////////
   ///////////////////////// SYNERGIC MOLECULE: LINK LENGTH ///////////////////////
   ////////////////////////////////////////////////////////////////////////////////
-  float4      ll_PR = length(Ll_PR);                                              // 1st link length.
-  float4      ll_PL = length(Ll_PL);                                              // 3rd link length.
+  float      ll_PR = length(Ll_PR);                                              // 1st link length.
+  float      ll_PL = length(Ll_PL);                                              // 3rd link length.
 
   ////////////////////////////////////////////////////////////////////////////////
   ///////////////////////// SYNERGIC MOLECULE: LINK STRAIN ///////////////////////
   ////////////////////////////////////////////////////////////////////////////////
-  float4      epsilon = fr + (float4)(1.0f, 1.0f, 1.0f, 1.0f);                  // Safety margin for division.
-  float4      sl_PR = SAFEDIV(ll_PR - rl_PR, ll_PR, epsilon);                       // 1st link strain.
-  float4      sl_PL = SAFEDIV(ll_PL - rl_PL, ll_PL, epsilon);                       // 3rd link strain.
+  float      epsilon = fr + 1.0f;                  // Safety margin for division.
+  float      sl_PR = ll_PR/rl_PR-1.0f;                       // 1st link strain.
+  float      sl_PL = ll_PL/rl_PL-1.0f;                       // 3rd link strain.
 
   ////////////////////////////////////////////////////////////////////////////////
   //////////////// SYNERGIC MOLECULE: LINKED PARTICLE DISPLACEMENT ///////////////
   ////////////////////////////////////////////////////////////////////////////////
-  *Dl_PR = sl_PR*Ll_PR;                                                            // 1st linked particle displacement.
-  *Dl_PL = sl_PL*Ll_PL;                                                            // 3rd linked particle displacement.
+  *Dl_PR = sl_PR*SAFEDIV(Ll_PR, ll_PR, epsilon);                                                            // 1st linked particle displacement.
+  *Dl_PL = sl_PL*SAFEDIV(Ll_PL, ll_PL, epsilon);                                                            // 3rd linked particle displacement.
 }
 
 
