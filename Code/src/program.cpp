@@ -39,7 +39,8 @@ int1* index_PL            = new int1(NUM_POINTS);                               
 float4* freedom           = new float4(NUM_POINTS);                              // Freedom/constrain flag.
 float1* dt                = new float1(1);
 
-float tick;
+float simulation_time;
+int time_step_number;
 
 void setup()
 {
@@ -168,7 +169,9 @@ void setup()
   printf("Critical DT = %f\n", cDT);
   printf("Simulation DT = %f\n", dt->x[0]);
 
-  tick = 0.0f;
+  // Set initial time to zero
+  simulation_time = 0.0f;
+  time_step_number = 0;
 
   // Initializing kernel variables...
   position->init();
@@ -249,44 +252,37 @@ void loop()
   // Executing kernel #1 and waiting for its termination...
   k1->execute(q1, WAIT);
 
-  // Popping kernel arguments for kernel #1...
-  position->pop(q1, k1, 0);
-  color->pop(q1, k1, 1);
-  position_int->pop(q1, k1, 2);
-  velocity->pop(q1, k1, 3);
-  velocity_int->pop(q1, k1, 4);
-  acceleration->pop(q1, k1, 5);
-  acceleration_int->pop(q1, k1, 6);
-  gravity->pop(q1, k1, 7);
-  stiffness->pop(q1, k1, 8);
-  resting->pop(q1, k1, 9);
-  friction->pop(q1, k1, 10);
-  mass->pop(q1, k1, 11);
-  index_PR->pop(q1, k1, 12);
-  index_PL->pop(q1, k1, 13);
-  freedom->pop(q1, k1, 14);
-  dt->pop(q1, k1, 15);
-
-  // Pushing kernel arguments to device memory (kernel #2)...
-  position->push(q1, k2, 0);
-  color->push(q1, k2, 1);
-  position_int->push(q1, k2, 2);
-  velocity->push(q1, k2, 3);
-  velocity_int->push(q1, k2, 4);
-  acceleration->push(q1, k2, 5);
-  acceleration_int->push(q1, k2, 6);
-  gravity->push(q1, k2, 7);
-  stiffness->push(q1, k2, 8);
-  resting->push(q1, k2, 9);
-  friction->push(q1, k2, 10);
-  mass->push(q1, k2, 11);
-  index_PR->push(q1, k2, 12);
-  index_PL->push(q1, k2, 13);
-  freedom->push(q1, k2, 14);
-  dt->push(q1, k2, 15);
-
   // Executing kernel #2 and waiting for its termination...
   k2->execute(q1, WAIT);
+
+  // Save vertical position of midpoint every 10 time steps
+  if(time_step_number%20 == 0)
+  {
+    float t;
+    float x[4*NUM_POINTS];
+    float y;
+    cl_int err;
+
+    t = simulation_time;
+
+    // Read vector of positions at time t
+    err = clEnqueueReadBuffer(q1->thequeue, position->buffer,
+                              CL_TRUE, 0, 4*sizeof(cl_float)*NUM_POINTS,
+                              x, 0, NULL, NULL);
+    if(err < 0)
+    {
+      printf("\nError:  %s\n", get_error(err));
+      exit(EXIT_FAILURE);
+    }
+
+    // Vertical position of midpoint
+    y = x[4*(NUM_POINTS-1)/2+1];
+
+    char buffer [100];
+    snprintf(buffer, sizeof buffer, "%f,%f\n", t, y);
+//    printf("t = %f, y = %f\n", t, y);
+    write_file("out.csv",buffer);
+  }
 
   // Popping kernel arguments for kernel #2...
   position->pop(q1, k2, 0);
@@ -309,6 +305,9 @@ void loop()
   // Plotting current configuration of the rope...
   plot(position, color, STYLE_POINT);
 
+  // Update simulation time
+  simulation_time += dt->x[0];
+  time_step_number += 1;
 }
 
 void terminate()
