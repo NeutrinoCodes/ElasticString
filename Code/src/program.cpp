@@ -5,7 +5,7 @@
 #define X_MIN           -1.0f
 #define X_MAX           1.0f
 #define LENGTH          (float)(X_MAX-X_MIN)
-#define NUM_POINTS      101
+#define NUM_POINTS      41
 #define DX              (float)(LENGTH/NUM_POINTS)
 #define KERNEL_FILE1     "../../kernel/thekernel1.cl"
 #define KERNEL_FILE2     "../../kernel/thekernel2.cl"
@@ -37,10 +37,10 @@ int1* index_PR            = new int1(NUM_POINTS);                               
 int1* index_PL            = new int1(NUM_POINTS);                               // Left particle.
 
 float4* freedom           = new float4(NUM_POINTS);                              // Freedom/constrain flag.
-float1* dt                = new float1(1);
 
-float simulation_time;
-int time_step_number;
+float1* dt                = new float1(1);                                      // Time step.
+float   simulation_time;                                                        // Simulation time.
+int     time_step_number;                                                       // Time step index.
 
 void setup()
 {
@@ -48,17 +48,11 @@ void setup()
   float x;
   char buffer[100];
 
-  // Dimensionless groups
-  float pi1 = 0.5f; // dt/(sqrt(m/k))
-/*  float pi2 = 0.01f; // c/sqrt(m*k)
-  float pi3 = 100.0f; // k/(NUM_POINTS*m*g) = (E*A)/(NUM_POINTS*m*g)
-  float pi4 = NUM_POINTS; // LENGTH/DX
-*/
-
+  // Cross-section area, volume density, Young's modulus, viscosity
   float A = 1e-4;
   float rho = 1e3;
-  float E = 1e6;
-  float mu = 1000.0;
+  float E = 1e5;
+  float mu = 500.0;
 
   // Model parameters (mass, gravity, stiffness, damping)
   float m = rho*A*DX;
@@ -67,13 +61,13 @@ void setup()
   float c = mu*A*DX;
 
   printf("Simulation parameters: k=%f, m=%f, c=%f\n", k, m, c);
-  snprintf(buffer, sizeof buffer,
-    "# Simulation parameters: k=%f, m=%f, c=%f\n",
-    k, m, c);
+  // Print header of output file
+  snprintf(buffer, sizeof buffer, "# Simulation parameters: k=%f, m=%f, c=%f\n",
+          k, m, c);
   write_file("out.csv", buffer);
 
   // Time step
-  dt->x[0] = pi1*sqrt(m/k);
+  dt->x[0] = 0.5*sqrt(m/k);
 
   // Initializing OpenCL queue...
   q1->init();
@@ -240,6 +234,39 @@ void setup()
   dt->set(k2,15);
 }
 
+void post_process(queue* q, point4* position)
+{
+  // Save vertical position of midpoint every 10 time steps
+  if(time_step_number%50 == 0)
+  {
+    float t;
+    float x[4*NUM_POINTS];
+    float y;
+    cl_int err;
+
+    t = simulation_time;
+
+    // Read vector of positions at time t
+    err = clEnqueueReadBuffer(q->thequeue, position->buffer,
+                              CL_TRUE, 0, 4*sizeof(cl_float)*NUM_POINTS,
+                              x, 0, NULL, NULL);
+    if(err < 0)
+    {
+      printf("\nError:  %s\n", get_error(err));
+      exit(EXIT_FAILURE);
+    }
+
+    // Vertical position of midpoint
+    y = x[4*(NUM_POINTS-1)/2+1];
+
+    // Format output string and write to CSV file
+    char buffer [100];
+    snprintf(buffer, sizeof buffer, "%f,%f\n", t, y);
+    printf("T = %f\n", simulation_time);
+    write_file("out.csv", buffer);
+  }
+}
+
 void loop()
 {
   // Pushing kernel arguments to device memory (kernel #1)...
@@ -266,35 +293,8 @@ void loop()
   // Executing kernel #2 and waiting for its termination...
   k2->execute(q1, WAIT);
 
-  // Save vertical position of midpoint every 10 time steps
-  if(time_step_number%50 == 0)
-  {
-    float t;
-    float x[4*NUM_POINTS];
-    float y;
-    cl_int err;
-
-    t = simulation_time;
-
-    // Read vector of positions at time t
-    err = clEnqueueReadBuffer(q1->thequeue, position->buffer,
-                              CL_TRUE, 0, 4*sizeof(cl_float)*NUM_POINTS,
-                              x, 0, NULL, NULL);
-    if(err < 0)
-    {
-      printf("\nError:  %s\n", get_error(err));
-      exit(EXIT_FAILURE);
-    }
-
-    // Vertical position of midpoint
-    y = x[4*(NUM_POINTS-1)/2+1];
-
-    // Format string and write to CSV file
-    char buffer [100];
-    snprintf(buffer, sizeof buffer, "%f,%f\n", t, y);
-    printf("T = %f\n", simulation_time);
-    write_file("out.csv",buffer);
-  }
+  // Post-process simulation data
+  post_process(q1, position);
 
   // Popping kernel arguments for kernel #2...
   position->pop(q1, k2, 0);
