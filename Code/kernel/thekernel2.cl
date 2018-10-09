@@ -49,9 +49,9 @@ void compute_link_displacements(float4 Pl_PR, float4 Pl_PL, float4 P,
   ////////////////////////////////////////////////////////////////////////////////
   ///////////////////////// SYNERGIC MOLECULE: LINK STRAIN ///////////////////////
   ////////////////////////////////////////////////////////////////////////////////
-  float4      epsilon = fr + (float4)(1.0f,1.0f,1.0f,1.0f);                  // Safety margin for division.
-  float4      sl_PR = ll_PR/rl_PR - (float4)(1.0f,1.0f,1.0f,1.0f);                       // 1st link strain.
-  float4      sl_PL = ll_PL/rl_PL - (float4)(1.0f,1.0f,1.0f,1.0f);                       // 3rd link strain.
+  float4      epsilon = fr - (float4)(1.0f,1.0f,1.0f,1.0f);                  // Safety margin for division.
+  float4      sl_PR = ll_PR - rl_PR;                                            // 1st link strain.
+  float4      sl_PL = ll_PL - rl_PL;                                            // 3rd link strain.
 
   ////////////////////////////////////////////////////////////////////////////////
   //////////////// SYNERGIC MOLECULE: LINKED PARTICLE DISPLACEMENT ///////////////

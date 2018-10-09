@@ -46,20 +46,31 @@ void setup()
 {
   int i;
   float x;
+  char buffer[100];
 
   // Dimensionless groups
   float pi1 = 0.5f; // dt/(sqrt(m/k))
-  float pi2 = 0.001f; // c/sqrt(m*k)
+/*  float pi2 = 0.01f; // c/sqrt(m*k)
   float pi3 = 100.0f; // k/(NUM_POINTS*m*g) = (E*A)/(NUM_POINTS*m*g)
   float pi4 = NUM_POINTS; // LENGTH/DX
+*/
+
+  float A = 1e-4;
+  float rho = 1e3;
+  float E = 1e6;
+  float mu = 1000.0;
 
   // Model parameters (mass, gravity, stiffness, damping)
-  float m = 10.0f/NUM_POINTS; // rho*A*DX = rho*A*L/NUM_POINTS = M/NUM_POINTS
+  float m = rho*A*DX;
   float g = 10.0f;
-  float k = pi3*m*g*NUM_POINTS;
-  float c = pi2*sqrt(m*k);
+  float k = E*A/DX;
+  float c = mu*A*DX;
 
   printf("Simulation parameters: k=%f, m=%f, c=%f\n", k, m, c);
+  snprintf(buffer, sizeof buffer,
+    "# Simulation parameters: k=%f, m=%f, c=%f\n",
+    k, m, c);
+  write_file("out.csv", buffer);
 
   // Time step
   dt->x[0] = pi1*sqrt(m/k);
@@ -146,7 +157,7 @@ void setup()
       freedom->x[i] = 0.0f;
       freedom->y[i] = 0.0f;
       freedom->z[i] = 0.0f;
-      freedom->w[i] = 1.0f;
+      freedom->w[i] = 0.0f;
     }
 
     if (i == 0)   // When on left extreme:
@@ -256,7 +267,7 @@ void loop()
   k2->execute(q1, WAIT);
 
   // Save vertical position of midpoint every 10 time steps
-  if(time_step_number%20 == 0)
+  if(time_step_number%50 == 0)
   {
     float t;
     float x[4*NUM_POINTS];
@@ -278,9 +289,10 @@ void loop()
     // Vertical position of midpoint
     y = x[4*(NUM_POINTS-1)/2+1];
 
+    // Format string and write to CSV file
     char buffer [100];
     snprintf(buffer, sizeof buffer, "%f,%f\n", t, y);
-//    printf("t = %f, y = %f\n", t, y);
+    printf("T = %f\n", simulation_time);
     write_file("out.csv",buffer);
   }
 
